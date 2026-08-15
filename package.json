@@ -1,0 +1,23 @@
+{
+  "name": "cloudflare-all-in-one-ai",
+  "version": "1.0.0",
+  "description": "Personal All-in-One AI Platform powered by Cloudflare Workers AI (58 Free Models)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers-ai",
+    "llm",
+    "flux",
+    "deepseek",
+    "render"
+  ],
+  "author": "",
+  "license": "MIT"
+}

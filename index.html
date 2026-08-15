@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OmniAI • Cloudflare Workers AI Studio</title>
+  
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap Icons (BI) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- AOS (Animate On Scroll) -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --cf-orange: #f38020;
+      --cf-orange-dark: #d96504;
+      --cf-orange-subtle: #fff7ed;
+      --cf-orange-border: #fed7aa;
+      --cf-orange-glow: rgba(243, 128, 32, 0.22);
+      
+      --bg-main: #f8fafc;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f1f5f9;
+      --bg-input: #ffffff;
+      --border-color: #e2e8f0;
+      --border-hover: #cbd5e1;
+      
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      
+      --accent-green: #10b981;
+      --accent-blue: #0284c7;
+      --accent-purple: #7c3aed;
+      
+      --sidebar-width: 280px;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.09);
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #090d16;
+      --bg-sidebar: #0e1422;
+      --bg-card: #141c2e;
+      --bg-card-subtle: #0f172a;
+      --bg-input: #0b111e;
+      --border-color: #222d42;
+      --border-hover: #3b4d6e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --cf-orange-subtle: rgba(243, 128, 32, 0.12);
+      --cf-orange-border: rgba(243, 128, 32, 0.35);
+      --shadow-sm: 0 2px 6px rgba(0,0,0,0.3);
+      --shadow-md: 0 8px 25px rgba(0,0,0,0.4);
+      --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      transition: background-color 0.25s, color 0.25s;
+      overflow-x: hidden;
+    }
+
+    /* 🔒 LOGIN SCREEN MODAL */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-main);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #login-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 410px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-dark));
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+      box-shadow: 0 10px 24px var(--cf-orange-glow);
+      margin-bottom: 20px;
+    }
+
+    .login-card h2 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .login-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 2px solid var(--border-color);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text-main);
+      text-align: center;
+      letter-spacing: 3px;
+      margin-bottom: 18px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .login-input:focus {
+      border-color: var(--cf-orange);
+      box-shadow: 0 0 0 4px var(--cf-orange-glow);
+    }
+
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-dark));
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 15.5px;
+      font-family: inherit;
+      font-weight: 700;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px var(--cf-orange-glow);
+      transition: transform 0.15s, opacity 0.2s;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .login-error {
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .shake {
+      animation: shake 0.4s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* App Layout */
+    .app-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      box-shadow: 0 4px 14px var(--cf-orange-glow);
+    }
+
+    .app-title h2 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-title span {
+      font-size: 11px;
+      color: var(--cf-orange);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .sidebar-close-btn {
+      display: none;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 6px 9px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    .nav-menu {
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      padding: 12px 14px 4px 14px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.18s ease;
+    }
+
+    .nav-item i {
+      font-size: 18px;
+      color: var(--text-dim);
+      transition: color 0.18s;
+    }
+
+    .nav-item:hover {
+      color: var(--text-main);
+      background: var(--bg-card-subtle);
+    }
+
+    .nav-item:hover i {
+      color: var(--cf-orange);
+    }
+
+    .nav-item.active {
+      color: var(--cf-orange-dark);
+      background: var(--cf-orange-subtle);
+      border-color: var(--cf-orange-border);
+      font-weight: 700;
+    }
+
+    [data-theme="dark"] .nav-item.active {
+      color: var(--cf-orange);
+    }
+
+    .nav-item.active i {
+      color: var(--cf-orange);
+    }
+
+    /* Sidebar Footer */
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-card-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .neuron-meter-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .neuron-meter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .neuron-count {
+      color: var(--cf-orange);
+      font-weight: 800;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--border-color);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cf-orange), #ea580c);
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    .neuron-subtext {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .logout-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s;
+    }
+
+    .logout-btn:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+
+    /* Workspace */
+    main.workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* Top Bar */
+    .topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: var(--bg-sidebar);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mobile-menu-toggle {
+      display: none;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .mode-header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode-header-badge i {
+      color: var(--cf-orange);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .mode-header-badge span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .header-pill-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--cf-orange-subtle);
+      border: 1px solid var(--cf-orange-border);
+      color: var(--cf-orange-dark);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    [data-theme="dark"] .header-pill-stat {
+      color: var(--cf-orange);
+    }
+
+    .theme-toggle-btn {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--cf-orange);
+      color: var(--cf-orange);
+    }
+
+    /* Content Area */
+    .view-content {
+      flex: 1;
+      padding: 24px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .view-panel {
+      display: none;
+    }
+
+    .view-panel.active {
+      display: block;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 7px;
+      color: var(--text-main);
+    }
+
+    .label-hint {
+      color: var(--text-dim);
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cf-orange);
+      box-shadow: 0 0 0 3px var(--cf-orange-glow);
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+    }
+
+    optgroup {
+      background: var(--bg-card);
+      color: var(--cf-orange-dark);
+      font-weight: 700;
+    }
+
+    option {
+      background: var(--bg-sidebar);
+      color: var(--text-main);
+      padding: 8px;
+    }
+
+    textarea {
+      min-height: 105px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* File Drop Zone */
+    .file-dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 14px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--bg-card-subtle);
+      transition: all 0.2s;
+      margin-bottom: 14px;
+    }
+
+    .file-dropzone:hover {
+      border-color: var(--cf-orange);
+      background: var(--cf-orange-subtle);
+    }
+
+    .file-dropzone i {
+      font-size: 32px;
+      color: var(--cf-orange);
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .media-preview-box {
+      max-width: 100%;
+      max-height: 240px;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-dark));
+      color: white;
+      border: none;
+      padding: 13px 24px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px var(--cf-orange-glow);
+      transition: transform 0.15s, opacity 0.2s;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card-subtle);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.18s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--text-main);
+      border-color: var(--border-hover);
+      background: var(--bg-input);
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+
+    .chip:hover {
+      color: var(--cf-orange-dark);
+      border-color: var(--cf-orange-border);
+      background: var(--cf-orange-subtle);
+    }
+
+    .badge-pill {
+      background: var(--cf-orange-subtle);
+      color: var(--cf-orange-dark);
+      border: 1px solid var(--cf-orange-border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    [data-theme="dark"] .badge-pill {
+      color: var(--cf-orange);
+    }
+
+    /* Output Console */
+    .output-box {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--text-main);
+      min-height: 240px;
+      max-height: 520px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      position: relative;
+    }
+
+    /* Modern AI Thinking Pulse */
+    .ai-thinking-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--cf-orange-border);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--cf-orange-glow);
+      animation: pulseSubtle 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseSubtle {
+      0%, 100% { border-color: var(--cf-orange-border); }
+      50% { border-color: var(--cf-orange); }
+    }
+
+    .ai-typing-dots {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ai-typing-dots span {
+      width: 9px;
+      height: 9px;
+      background: var(--cf-orange);
+      border-radius: 50%;
+      display: inline-block;
+      animation: waveDot 1.4s infinite ease-in-out both;
+    }
+
+    .ai-typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .ai-typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+    .ai-typing-dots span:nth-child(3) { animation-delay: 0s; }
+
+    @keyframes waveDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 10px var(--cf-orange); }
+    }
+
+    .ai-thinking-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cf-orange-dark);
+      letter-spacing: -0.01em;
+    }
+
+    [data-theme="dark"] .ai-thinking-text {
+      color: var(--cf-orange);
+    }
+
+    .ai-thinking-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+      margin-left: auto;
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .request-stat-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--cf-orange-subtle);
+      border: 1px solid var(--cf-orange-border);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cf-orange-dark);
+      margin-bottom: 12px;
+    }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+    }
+
+    /* How to Use Guide Styles */
+    .guide-step-card {
+      display: flex;
+      gap: 16px;
+      padding: 18px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+
+    .guide-step-num {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-dark));
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px var(--cf-orange-glow);
+    }
+
+    .guide-step-content h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .guide-step-content p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Mobile Responsive Polish */
+    @media (max-width: 860px) {
+      aside.sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+      }
+      aside.sidebar.open {
+        transform: translateX(0);
+        box-shadow: 0 0 30px rgba(0,0,0,0.3);
+      }
+      .sidebar-backdrop.open { display: block; }
+      .sidebar-close-btn { display: block; }
+      .mobile-menu-toggle { display: flex; }
+      .grid-2 { grid-template-columns: 1fr; gap: 16px; }
+      .view-content { padding: 14px; }
+      .card { padding: 18px 16px; border-radius: 14px; margin-bottom: 14px; }
+      .btn-primary { width: 100%; }
+      .topbar {
+        padding: 0 12px;
+        height: 56px;
+        gap: 8px;
+      }
+      .topbar-left {
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+      }
+      .mode-header-badge {
+        padding: 5px 8px;
+        font-size: 13px;
+        gap: 5px;
+        background: transparent;
+        border: none;
+      }
+      .topbar-right {
+        gap: 6px;
+      }
+      .header-pill-stat {
+        padding: 5px 10px;
+        font-size: 11.5px;
+      }
+      .theme-toggle-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+      }
+      .ai-thinking-sub { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 🔒 PASSWORD LOGIN OVERLAY -->
+  <div id="login-overlay">
+    <div class="login-card" id="login-card" data-aos="zoom-in">
+      <div class="login-logo">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <h2>OmniAI Hub</h2>
+      <p>Enter your access password to unlock your Cloudflare Workers AI platform.</p>
+
+      <input id="login-pass" type="password" class="login-input" placeholder="••••••••" autofocus onkeydown="if(event.key==='Enter') checkLogin()">
+      <button class="login-btn" onclick="checkLogin()">
+        <i class="bi bi-unlock-fill"></i> Unlock Platform
+      </button>
+      <div id="login-error" class="login-error">Incorrect password. Please try again.</div>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="app-wrapper">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-left">
+          <div class="app-logo">
+            <i class="bi bi-cpu-fill"></i>
+          </div>
+          <div class="app-title">
+            <h2>OmniAI</h2>
+            <span>58 FREE MODELS</span>
+          </div>
+        </div>
+        <button class="sidebar-close-btn" onclick="toggleSidebar()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-label">AI Studio</div>
+        <a class="nav-item active" onclick="showView('chat', 'Chat & Reasoning', 'bi-chat-dots-fill')">
+          <i class="bi bi-chat-dots-fill"></i>
+          Chat & Reasoning
+        </a>
+        <a class="nav-item" onclick="showView('media', 'Vision & Audio Upload', 'bi-file-earmark-arrow-up-fill')">
+          <i class="bi bi-file-earmark-arrow-up-fill"></i>
+          Vision & Media Upload
+        </a>
+        <a class="nav-item" onclick="showView('image', 'Image Generation', 'bi-palette-fill')">
+          <i class="bi bi-palette-fill"></i>
+          Image Studio (Flux/SDXL)
+        </a>
+        <a class="nav-item" onclick="showView('code', 'Code Specialist', 'bi-code-slash')">
+          <i class="bi bi-code-slash"></i>
+          Code Specialist
+        </a>
+        <a class="nav-item" onclick="showView('audio', 'Voice & Speech', 'bi-soundwave')">
+          <i class="bi bi-soundwave"></i>
+          Voice & Speech (TTS)
+        </a>
+        <a class="nav-item" onclick="showView('translate', 'Language Translate', 'bi-translate')">
+          <i class="bi bi-translate"></i>
+          Translator
+        </a>
+
+        <div class="nav-label" style="margin-top: 8px;">Documentation & Help</div>
+        <a class="nav-item" onclick="showView('howtouse', 'How to Use OmniAI', 'bi-book-half')">
+          <i class="bi bi-book-half"></i>
+          How to Use Guide
+        </a>
+        <a class="nav-item" onclick="showView('neurons', 'Neurons Guide & Tips', 'bi-lightning-charge-fill')">
+          <i class="bi bi-lightning-charge-fill"></i>
+          Neuron Tracker
+        </a>
+        <a class="nav-item" onclick="showView('settings', 'API Keys & Config', 'bi-gear-fill')">
+          <i class="bi bi-gear-fill"></i>
+          Settings
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="neuron-meter-card">
+          <div class="neuron-meter-header">
+            <span><i class="bi bi-lightning-charge"></i> Daily Neurons</span>
+            <span class="neuron-count" id="sidebar-neuron-count">0 / 10k</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" id="sidebar-neuron-bar"></div>
+          </div>
+          <div class="neuron-subtext">
+            <span id="sidebar-neuron-pct">0% Used</span>
+            <span>Resets 00:00 UTC</span>
+          </div>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">
+          <i class="bi bi-box-arrow-right"></i> Lock Platform
+        </button>
+      </div>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="workspace">
+      
+      <!-- Sleek Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Open Navigation Menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="mode-header-badge">
+            <i class="bi bi-chat-dots-fill" id="view-icon"></i>
+            <span id="view-title">Chat & Reasoning</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="header-pill-stat">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <span id="topbar-neuron-stat">10k Free</span>
+          </div>
+          <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+            <i class="bi bi-moon-stars-fill" id="theme-icon"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main View Content -->
+      <div class="view-content">
+        
+        <!-- 1. CHAT VIEW -->
+        <section id="view-chat" class="view-panel active">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-sliders me-1" style="color:var(--cf-orange);"></i> Chat Configuration</span>
+                <span class="badge-pill"><i class="bi bi-check-circle-fill"></i> Free Daily LLM</span>
+              </div>
+
+              <div class="form-group">
+                <label for="chat-model">Select LLM Model</label>
+                <select id="chat-model">
+                  <option value="@cf/meta/llama-3.1-8b-instruct-fp8" selected>@cf/meta/llama-3.1-8b-instruct-fp8 (~11 Neurons / 1k)</option>
+                  <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">@cf/deepseek-ai/deepseek-r1-distill-qwen-32b (Reasoning)</option>
+                  <option value="@cf/openai/gpt-oss-120b">@cf/openai/gpt-oss-120b (Reasoning & Tools)</option>
+                  <option value="@cf/meta/llama-3.2-3b-instruct">@cf/meta/llama-3.2-3b-instruct (Fast & Lightweight)</option>
+                  <option value="@cf/meta/llama-3.2-1b-instruct">@cf/meta/llama-3.2-1b-instruct (Lowest Neurons ~3/1k)</option>
+                  <option value="@cf/qwen/qwq-32b">@cf/qwen/qwq-32b (Deep Math & Logic)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="chat-system">System Persona</label>
+                <input id="chat-system" type="text" value="You are a helpful, concise AI assistant." placeholder="System instructions...">
+                <div class="chip-list">
+                  <span class="chip" onclick="setSystemPrompt('You are a helpful, concise AI assistant.')"><i class="bi bi-lightning"></i> Concise</span>
+                  <span class="chip" onclick="setSystemPrompt('You are an expert software architect. Provide code with explanations.')"><i class="bi bi-code-square"></i> Tech Architect</span>
+                  <span class="chip" onclick="setSystemPrompt('You are a legal and contract specialist.')"><i class="bi bi-file-earmark-text"></i> Legal</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="chat-input">User Message</label>
+                <textarea id="chat-input" placeholder="Type your question...">What are the top 3 best practices to prevent SQL injection in Node.js?</textarea>
+              </div>
+
+              <button id="chat-btn" class="btn-primary" onclick="sendChat()">
+                <i class="bi bi-send-fill"></i> Generate Response
+              </button>
+            </div>
+
+            <!-- Chat Output Card -->
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column;">
+              <div class="card-title">
+                <span><i class="bi bi-cpu me-1" style="color:var(--cf-orange);"></i> AI Output</span>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn-secondary" onclick="copyText('chat-output')"><i class="bi bi-clipboard"></i> Copy</button>
+                  <button class="btn-secondary" onclick="clearText('chat-output')"><i class="bi bi-trash"></i> Clear</button>
+                </div>
+              </div>
+
+              <div id="chat-stat-bar" class="request-stat-bar" style="display:none;">
+                <span id="chat-neuron-stat"><i class="bi bi-lightning-fill"></i> ~12 Neurons used</span>
+                <span>•</span>
+                <span id="chat-balance-stat">9,988 Neurons remaining</span>
+              </div>
+
+              <div class="output-box" id="chat-output" style="flex:1;">Ready for prompt. Enter your question and click "Generate Response".</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. VISION & MEDIA UPLOAD VIEW (Image-to-Text & Whisper Audio) -->
+        <section id="view-media" class="view-panel">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-file-earmark-arrow-up-fill me-1" style="color:var(--cf-orange);"></i> Media Input (Vision & Audio)</span>
+                <span class="badge-pill">Upload Support</span>
+              </div>
+
+              <div class="form-group">
+                <label for="media-model">Select Model</label>
+                <select id="media-model" onchange="onMediaTypeChange()">
+                  <optgroup label="Vision & Image-to-Text">
+                    <option value="@cf/llava-hf/llava-1.5-7b-hf" selected data-type="image">@cf/llava-hf/llava-1.5-7b-hf (Image QA & Analysis)</option>
+                    <option value="@cf/moondream/moondream3.1-9B-A2B" data-type="image">@cf/moondream/moondream3.1-9B-A2B (Fast Vision)</option>
+                    <option value="@cf/meta/llama-3.2-11b-vision-instruct" data-type="image">@cf/meta/llama-3.2-11b-vision-instruct (High Accuracy)</option>
+                  </optgroup>
+                  <optgroup label="Audio Transcription (ASR)">
+                    <option value="@cf/openai/whisper" data-type="audio">@cf/openai/whisper (OpenAI Speech Recognition)</option>
+                    <option value="@cf/openai/whisper-large-v3-turbo" data-type="audio">@cf/openai/whisper-large-v3-turbo (Whisper Turbo)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label id="upload-label">Upload Image File (PNG, JPG, WebP)</label>
+                <div class="file-dropzone" onclick="document.getElementById('file-input').click()">
+                  <i class="bi bi-cloud-arrow-up-fill" id="drop-icon"></i>
+                  <div style="font-weight:700; font-size:14px;" id="drop-text">Click or Drag & Drop Image Here</div>
+                  <div style="font-size:12px; color:var(--text-dim); margin-top:4px;" id="drop-hint">Supports PNG, JPG, WebP up to 10MB</div>
+                </div>
+                <input id="file-input" type="file" style="display:none;" accept="image/*" onchange="handleFileUpload(event)">
+                <img id="img-preview" class="media-preview-box" alt="Image preview">
+                <audio id="audio-preview" controls class="media-preview-box" style="width:100%; height:40px;"></audio>
+              </div>
+
+              <div class="form-group" id="vision-prompt-group">
+                <label for="media-prompt">Prompt / Question About The Image</label>
+                <textarea id="media-prompt" placeholder="Ask what is inside this image...">Describe what is in this image in detail and list all detected objects.</textarea>
+              </div>
+
+              <button id="media-btn" class="btn-primary" onclick="runMediaInference()">
+                <i class="bi bi-play-circle-fill"></i> Analyze Media
+              </button>
+            </div>
+
+            <!-- Media Output Card -->
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column;">
+              <div class="card-title">
+                <span><i class="bi bi-card-text me-1" style="color:var(--cf-orange);"></i> Analysis Output</span>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn-secondary" onclick="copyText('media-output')"><i class="bi bi-clipboard"></i> Copy</button>
+                  <button class="btn-secondary" onclick="clearText('media-output')"><i class="bi bi-trash"></i> Clear</button>
+                </div>
+              </div>
+              <div class="output-box" id="media-output" style="flex:1;">Upload an image or audio file and click "Analyze Media" to view results here...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. IMAGE STUDIO & EDITOR VIEW -->
+        <section id="view-image" class="view-panel">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-palette-fill me-1" style="color:var(--cf-orange);"></i> Image Studio & AI Editor</span>
+                <span class="badge-pill">Flux, SDXL & Editor</span>
+              </div>
+
+              <!-- Mode Tabs: Text-to-Image or Image-to-Image Edit -->
+              <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <button id="img-tab-gen" class="btn-secondary" style="flex:1; justify-content:center; background:var(--cf-orange-subtle); color:var(--cf-orange-dark); border-color:var(--cf-orange-border); font-weight:700;" onclick="switchImgStudioMode('generate')">
+                  <i class="bi bi-magic"></i> Generate New
+                </button>
+                <button id="img-tab-edit" class="btn-secondary" style="flex:1; justify-content:center;" onclick="switchImgStudioMode('edit')">
+                  <i class="bi bi-sliders2"></i> Edit / Filter
+                </button>
+              </div>
+
+              <!-- Generation Controls -->
+              <div id="img-gen-controls">
+                <div class="form-group">
+                  <label for="image-model">Select Image Model</label>
+                  <select id="image-model">
+                    <option value="@cf/black-forest-labs/flux-1-schnell" selected>@cf/black-forest-labs/flux-1-schnell (~50 Neurons/image)</option>
+                    <option value="@cf/bytedance/stable-diffusion-xl-lightning">@cf/bytedance/stable-diffusion-xl-lightning (~35 Neurons, Fast)</option>
+                    <option value="@cf/black-forest-labs/flux-2-dev">@cf/black-forest-labs/flux-2-dev</option>
+                    <option value="@cf/stabilityai/stable-diffusion-xl-base-1.0">@cf/stabilityai/stable-diffusion-xl-base-1.0</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="image-prompt">Image Prompt</label>
+                  <textarea id="image-prompt" placeholder="Describe image...">A futuristic cybernetic tiger prowling through a rainy neon Tokyo alleyway, volumetric lighting, 8k render</textarea>
+                  <div class="chip-list">
+                    <span class="chip" onclick="addImageStyle(', cinematic lighting, photorealistic')">+ Cinematic</span>
+                    <span class="chip" onclick="addImageStyle(', cyberpunk aesthetic, neon glow')">+ Cyberpunk</span>
+                    <span class="chip" onclick="addImageStyle(', 3D isometric render, blender')">+ 3D Render</span>
+                    <span class="chip" onclick="addImageStyle(', oil painting on canvas')">+ Oil Painting</span>
+                  </div>
+                </div>
+
+                <button id="image-btn" class="btn-primary" onclick="generateImage()">
+                  <i class="bi bi-stars"></i> Generate Image (~50 Neurons)
+                </button>
+              </div>
+
+              <!-- Edit & AI Restyle Controls -->
+              <div id="img-edit-controls" style="display:none;">
+                <div class="form-group">
+                  <label>1. Upload Base Image</label>
+                  <input type="file" id="edit-img-upload" accept="image/*" onchange="handleEditImageUpload(event)" style="padding:8px;">
+                </div>
+
+                <div class="form-group" style="background:var(--cf-orange-subtle); border:1px solid var(--cf-orange-border); border-radius:12px; padding:14px; margin-bottom:16px;">
+                  <label style="color:var(--cf-orange-dark); font-weight:800;"><i class="bi bi-magic"></i> 2. AI Restyle / Edit Prompt</label>
+                  <textarea id="ai-edit-prompt" placeholder="Tell AI how to transform this image... (e.g. 'convert to cyberpunk anime style with neon lights', 'make it an oil painting', 'change background to snowy mountains')">Convert this image into a colorful cyberpunk anime masterpiece with glowing neon lighting</textarea>
+                  
+                  <div style="margin-top:10px;">
+                    <label style="font-size:12px;">Transformation Strength: <span id="val-strength" style="color:var(--cf-orange); font-weight:700;">70%</span></label>
+                    <input type="range" id="ai-edit-strength" min="20" max="95" value="70" oninput="document.getElementById('val-strength').textContent = this.value + '%'" style="margin-top:4px;">
+                  </div>
+
+                  <button id="ai-edit-btn" class="btn-primary" style="width:100%; margin-top:12px;" onclick="runAiImageEdit()">
+                    <i class="bi bi-stars"></i> Transform & Update Image
+                  </button>
+                </div>
+
+                <div class="form-group">
+                  <label><i class="bi bi-sliders"></i> Manual Sliders & Filters</label>
+                </div>
+
+                <div class="form-group">
+                  <label>Brightness: <span id="val-brightness">100%</span></label>
+                  <input type="range" id="filter-brightness" min="20" max="200" value="100" oninput="applyLiveFilters()">
+                </div>
+
+                <div class="form-group">
+                  <label>Contrast: <span id="val-contrast">100%</span></label>
+                  <input type="range" id="filter-contrast" min="20" max="200" value="100" oninput="applyLiveFilters()">
+                </div>
+
+                <div class="form-group">
+                  <label>Saturation: <span id="val-saturate">100%</span></label>
+                  <input type="range" id="filter-saturate" min="0" max="250" value="100" oninput="applyLiveFilters()">
+                </div>
+
+                <div class="form-group">
+                  <label>Preset Filters</label>
+                  <div class="chip-list">
+                    <span class="chip" onclick="setPresetFilter('grayscale(100%)')">B & W</span>
+                    <span class="chip" onclick="setPresetFilter('sepia(90%)')">Vintage Sepia</span>
+                    <span class="chip" onclick="setPresetFilter('invert(100%)')">Invert</span>
+                    <span class="chip" onclick="setPresetFilter('hue-rotate(90deg)')">Cyber Tint</span>
+                    <span class="chip" onclick="setPresetFilter('none')">Reset Filters</span>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px;">
+                  <button class="btn-secondary" style="flex:1;" onclick="rotateImage(90)"><i class="bi bi-arrow-clockwise"></i> Rotate 90°</button>
+                  <button class="btn-secondary" style="flex:1;" onclick="flipImage()"><i class="bi bi-symmetry-vertical"></i> Flip</button>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <div class="card-title" style="width:100%;">
+                <span><i class="bi bi-image me-1" style="color:var(--cf-orange);"></i> Canvas & Result</span>
+                <span id="image-time" style="font-size:12px; color:var(--text-dim);"></span>
+              </div>
+              <div id="image-result-box" style="width:100%; min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg-card-subtle); border-radius:12px; border:1px solid var(--border-color); padding:16px;">
+                <img id="active-studio-img" style="max-width:100%; max-height:360px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); display:none;" />
+                <span id="img-placeholder" style="color:var(--text-dim); font-size:14px;"><i class="bi bi-image" style="font-size:24px; display:block; margin-bottom:8px;"></i>Generated or uploaded image will appear here</span>
+                
+                <div id="img-action-bar" style="margin-top:14px; width:100%; text-align:center; display:none; gap:8px; justify-content:center; flex-wrap:wrap;">
+                  <a id="img-download-link" href="#" download="image.png" class="btn-secondary" style="text-decoration:none;"><i class="bi bi-download"></i> Download Image</a>
+                  <button class="btn-secondary" onclick="sendToEditor()"><i class="bi bi-palette"></i> Edit This Image</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. CODE SPECIALIST VIEW -->
+        <section id="view-code" class="view-panel">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-code-slash me-1" style="color:var(--accent-blue);"></i> Code Specialist</span>
+                <span class="badge-pill">Qwen 2.5 Coder 32B</span>
+              </div>
+
+              <div class="form-group">
+                <label for="code-model">Model</label>
+                <select id="code-model">
+                  <option value="@cf/qwen/qwen2.5-coder-32b-instruct" selected>@cf/qwen/qwen2.5-coder-32b-instruct (Code Specialist)</option>
+                  <option value="@cf/meta/llama-3.1-8b-instruct-fp8">@cf/meta/llama-3.1-8b-instruct-fp8</option>
+                  <option value="@cf/openai/gpt-oss-120b">@cf/openai/gpt-oss-120b</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="code-prompt">Task or Code</label>
+                <textarea id="code-prompt" style="min-height:130px;" placeholder="Describe task or paste code...">Write a TypeScript async queue with concurrency limit, retry logic, and exponential backoff.</textarea>
+              </div>
+
+              <button id="code-btn" class="btn-primary" onclick="generateCode()">
+                <i class="bi bi-terminal-fill"></i> Generate Code Solution
+              </button>
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column;">
+              <div class="card-title">
+                <span><i class="bi bi-file-earmark-code me-1" style="color:var(--cf-orange);"></i> Code Output</span>
+                <button class="btn-secondary" onclick="copyText('code-output')"><i class="bi bi-clipboard"></i> Copy</button>
+              </div>
+              <div class="output-box" id="code-output" style="flex:1;">Code solution will appear here...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. VOICE & TTS VIEW -->
+        <section id="view-audio" class="view-panel">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-soundwave me-1" style="color:var(--accent-purple);"></i> Text-to-Speech</span>
+                <span class="badge-pill">Deepgram Aura</span>
+              </div>
+
+              <div class="form-group">
+                <label for="audio-model">TTS Model</label>
+                <select id="audio-model">
+                  <option value="@cf/deepgram/aura-2-en" selected>@cf/deepgram/aura-2-en (English Natural Voice)</option>
+                  <option value="@cf/deepgram/aura-2-es">@cf/deepgram/aura-2-es (Spanish Voice)</option>
+                  <option value="@cf/myshell-ai/melotts">@cf/myshell-ai/melotts</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="audio-text">Text to Speak</label>
+                <textarea id="audio-text" placeholder="Enter text...">Welcome to OmniAI, powered by Cloudflare Workers AI global edge network. Fast, serverless, and completely free within your daily 10,000 neurons.</textarea>
+              </div>
+
+              <button id="audio-btn" class="btn-primary" onclick="synthesizeSpeech()">
+                <i class="bi bi-mic-fill"></i> Generate Voice Audio
+              </button>
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+              <div class="card-title" style="width:100%;">
+                <span><i class="bi bi-play-circle me-1" style="color:var(--cf-orange);"></i> Audio Stream</span>
+              </div>
+              <div id="audio-player-box" style="width:100%; min-height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg-card-subtle); border-radius:12px; border:1px solid var(--border-color); padding:20px;">
+                <span style="color:var(--text-dim); font-size:14px;"><i class="bi bi-volume-up" style="font-size:24px; display:block; margin-bottom:8px;"></i>Generated audio stream will play here</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. TRANSLATOR VIEW -->
+        <section id="view-translate" class="view-panel">
+          <div class="grid-2">
+            <div class="card" data-aos="fade-up">
+              <div class="card-title">
+                <span><i class="bi bi-translate me-1" style="color:var(--accent-green);"></i> Multilingual Translation</span>
+                <span class="badge-pill">M2M-100</span>
+              </div>
+
+              <div class="form-group">
+                <label for="trans-target">Target Language</label>
+                <select id="trans-target">
+                  <option value="es" selected>Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="zh">Chinese (中文)</option>
+                  <option value="ja">Japanese (日本語)</option>
+                  <option value="hi">Hindi (हिन्दी)</option>
+                  <option value="ta">Tamil (தமிழ்)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="trans-text">Source Text</label>
+                <textarea id="trans-text" placeholder="Enter text to translate...">Artificial intelligence and serverless computing empower developers worldwide to build modern applications with zero infrastructure management.</textarea>
+              </div>
+
+              <button id="trans-btn" class="btn-primary" onclick="runTranslate()">
+                <i class="bi bi-arrow-repeat"></i> Translate Text
+              </button>
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="100" style="display:flex; flex-direction:column;">
+              <div class="card-title">
+                <span><i class="bi bi-globe me-1" style="color:var(--cf-orange);"></i> Translated Output</span>
+                <button class="btn-secondary" onclick="copyText('trans-output')"><i class="bi bi-clipboard"></i> Copy</button>
+              </div>
+              <div class="output-box" id="trans-output" style="flex:1;">Translation will appear here...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. 📖 HOW TO USE GUIDE VIEW -->
+        <section id="view-howtouse" class="view-panel">
+          <div class="card" data-aos="fade-up">
+            <div class="card-title">
+              <span><i class="bi bi-book-half me-1" style="color:var(--cf-orange);"></i> How to Use OmniAI Platform</span>
+              <span class="badge-pill">Step-by-Step Guide</span>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-num">1</div>
+              <div class="guide-step-content">
+                <h4>Unlock Platform & Credentials</h4>
+                <p>
+                  The platform is locked with password <code>vimalraj45</code>. Your Cloudflare credentials (Account ID & Token) are loaded automatically from the server's <code>.env</code> file. If you ever want to use a different Cloudflare account, simply open <strong>Settings</strong> and enter your custom keys.
+                </p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-num">2</div>
+              <div class="guide-step-content">
+                <h4>Selecting the Right Model for Your Task</h4>
+                <p>
+                  • <strong>Daily Chat & General QA</strong>: Use <code>llama-3.1-8b</code> (fast and saves neurons).<br>
+                  • <strong>Deep Reasoning & Logic</strong>: Use <code>deepseek-r1-distill-qwen-32b</code> or <code>gpt-oss-120b</code>.<br>
+                  • <strong>Coding & Programming</strong>: Use <code>qwen2.5-coder-32b-instruct</code> for complete code snippets and refactoring.<br>
+                  • <strong>Image Generation</strong>: Use <code>flux-1-schnell</code> for hyper-realistic renders or <code>sdxl-lightning</code> for fast generation.<br>
+                  • <strong>Image QA & Vision</strong>: Use <code>llava-1.5-7b</code> to upload an image and ask questions about it.<br>
+                  • <strong>Audio Speech-to-Text</strong>: Upload audio in the Media tab to transcribe with <code>whisper</code>.
+                </p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-num">3</div>
+              <div class="guide-step-content">
+                <h4>Tracking & Maximizing Your 10,000 Daily Free Neurons</h4>
+                <p>
+                  Cloudflare gives you <strong>10,000 Neurons every single day for free</strong> (resets automatically at 00:00 UTC). The sidebar and topbar live meters estimate your usage after every request so you never run out of quota.
+                </p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-num">4</div>
+              <div class="guide-step-content">
+                <h4>Hosting Free on Render</h4>
+                <p>
+                  You can deploy this entire repository to Render for free! Simply push this repo to GitHub, link it in <a href="https://dashboard.render.com" target="_blank" style="color:var(--cf-orange); text-decoration:underline;">Render Dashboard</a>, set <code>CLOUDFLARE_ACCOUNT_ID</code>, <code>CLOUDFLARE_API_TOKEN</code>, and <code>APP_PASSWORD</code> in Render Environment Variables, and your personal AI platform is live 24/7.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. NEURONS GUIDE VIEW -->
+        <section id="view-neurons" class="view-panel">
+          <div class="grid-3" style="margin-bottom: 20px;">
+            <div class="card" data-aos="fade-up">
+              <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Daily Free Quota</div>
+              <div style="font-size:28px; font-weight:900; color:var(--cf-orange); margin:6px 0;">10,000 Neurons</div>
+              <p style="font-size:13px; color:var(--text-muted); line-height:1.4;">Renews every 24h at 00:00 UTC automatically.</p>
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="100">
+              <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Used Today</div>
+              <div style="font-size:28px; font-weight:900; color:var(--accent-green); margin:6px 0;" id="guide-neurons-used">0 Neurons</div>
+              <p style="font-size:13px; color:var(--text-muted); line-height:1.4;" id="guide-neurons-pct">0% of daily free allocation.</p>
+            </div>
+
+            <div class="card" data-aos="fade-up" data-aos-delay="200">
+              <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Remaining Balance</div>
+              <div style="font-size:28px; font-weight:900; color:var(--accent-blue); margin:6px 0;" id="guide-neurons-left">10,000 Neurons</div>
+              <p style="font-size:13px; color:var(--text-muted); line-height:1.4;">Enough for ~900,000 LLM tokens today.</p>
+            </div>
+          </div>
+
+          <div class="card" data-aos="fade-up">
+            <div class="card-title">
+              <span><i class="bi bi-lightbulb-fill me-1" style="color:var(--cf-orange);"></i> How to Decrease & Save Neurons</span>
+            </div>
+            <p style="font-size:13.5px; line-height:1.7;">
+              • <strong>Use 1B–3B Models</strong> (e.g. <code>llama-3.2-1b</code>) for standard prompts — uses 70% fewer neurons.<br>
+              • <strong>Concise Persona</strong>: Add <em>"Be brief and direct"</em> to system instructions.<br>
+              • <strong>Fast Image Models</strong>: <code>flux-1-schnell</code> and <code>sdxl-lightning</code> consume half the neurons of unquantized models.
+            </p>
+          </div>
+        </section>
+
+        <!-- 9. SETTINGS VIEW -->
+        <section id="view-settings" class="view-panel">
+          <div class="card" data-aos="fade-up" style="max-width:680px;">
+            <div class="card-title">
+              <span><i class="bi bi-gear-fill me-1" style="color:var(--cf-orange);"></i> API Credentials & Environment</span>
+            </div>
+            <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:18px; line-height:1.5;">
+              If you leave these fields empty, the platform automatically uses your secure server <strong>.env</strong> / <strong>Render Environment Variables</strong>.
+            </p>
+
+            <div class="form-group">
+              <label for="cfg-account">
+                <span>Cloudflare Account ID</span>
+                <span class="label-hint">(Optional override)</span>
+              </label>
+              <input id="cfg-account" type="text" placeholder="Leave empty to use server .env, or enter Account ID">
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-token">
+                <span>Cloudflare API Token</span>
+                <span class="label-hint">(Optional override)</span>
+              </label>
+              <input id="cfg-token" type="password" placeholder="Leave empty to use server .env, or enter API Token">
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn-primary" onclick="saveSettings()"><i class="bi bi-check2"></i> Save Custom Credentials</button>
+              <button class="btn-secondary" onclick="clearSettings()"><i class="bi bi-arrow-counterclockwise"></i> Clear (Use .env Default)</button>
+              <button class="btn-secondary" onclick="resetNeuronCounter()"><i class="bi bi-arrow-clockwise"></i> Reset Daily Meter</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- AOS JS -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+AOS.init({
+  duration: 350,
+  once: true,
+  easing: 'ease-out-cubic'
+});
+
+// ==========================================
+// SECURE SERVER-SIDE AUTHENTICATION
+// ==========================================
+const AUTH_KEY = "omni_auth_session";
+
+function checkAuthOnLoad() {
+  const isAuth = sessionStorage.getItem(AUTH_KEY) === "true";
+  if (isAuth) {
+    document.getElementById("login-overlay").classList.add("hidden");
+  } else {
+    document.getElementById("login-overlay").classList.remove("hidden");
+    document.getElementById("login-pass").focus();
+  }
+}
+
+async function checkLogin() {
+  const password = document.getElementById("login-pass").value;
+  const errorElem = document.getElementById("login-error");
+  const card = document.getElementById("login-card");
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      sessionStorage.setItem(AUTH_KEY, "true");
+      document.getElementById("login-overlay").classList.add("hidden");
+      errorElem.style.display = "none";
+    } else {
+      errorElem.style.display = "block";
+      card.classList.add("shake");
+      setTimeout(() => card.classList.remove("shake"), 500);
+    }
+  } catch (err) {
+    errorElem.textContent = "Server connection error.";
+    errorElem.style.display = "block";
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById("login-pass").value = "";
+  document.getElementById("login-overlay").classList.remove("hidden");
+  if (window.innerWidth <= 860) toggleSidebar();
+}
+
+// ==========================================
+// AI THINKING INDICATOR
+// ==========================================
+function getThinkingHTML(title = "Thinking...") {
+  return `
+    <div class="ai-thinking-bar">
+      <div class="ai-typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <span class="ai-thinking-text">${title}</span>
+      <span class="ai-thinking-sub"><i class="bi bi-gpu-card"></i> Cloudflare Edge</span>
+    </div>
+  `;
+}
+
+// ==========================================
+// APP STATE & STORAGE
+// ==========================================
+const STORAGE_KEYS = {
+  ACCOUNT: "omni_cf_account",
+  TOKEN: "omni_cf_token",
+  NEURONS_USED: "omni_neurons_used_" + new Date().toISOString().slice(0, 10),
+  THEME: "omni_theme"
+};
+
+const DAILY_LIMIT = 10000;
+
+document.addEventListener("DOMContentLoaded", () => {
+  checkAuthOnLoad();
+  loadTheme();
+  loadStoredCredentials();
+  updateNeuronUI();
+});
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "light";
+  const next = current === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem(STORAGE_KEYS.THEME, next);
+  
+  const icon = document.getElementById("theme-icon");
+  if (next === "dark") {
+    icon.className = "bi bi-sun-fill";
+  } else {
+    icon.className = "bi bi-moon-stars-fill";
+  }
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem(STORAGE_KEYS.THEME) || "light";
+  document.documentElement.setAttribute("data-theme", saved);
+  const icon = document.getElementById("theme-icon");
+  if (saved === "dark") {
+    icon.className = "bi bi-sun-fill";
+  } else {
+    icon.className = "bi bi-moon-stars-fill";
+  }
+}
+
+function getNeuronsUsedToday() {
+  return parseInt(localStorage.getItem(STORAGE_KEYS.NEURONS_USED) || "0", 10);
+}
+
+function addNeurons(amount) {
+  const current = getNeuronsUsedToday();
+  const next = current + Math.round(amount);
+  localStorage.setItem(STORAGE_KEYS.NEURONS_USED, next.toString());
+  updateNeuronUI();
+  return next;
+}
+
+function updateNeuronUI() {
+  const used = getNeuronsUsedToday();
+  const remaining = Math.max(0, DAILY_LIMIT - used);
+  const pct = Math.min(100, Math.round((used / DAILY_LIMIT) * 100));
+
+  const bar = document.getElementById("sidebar-neuron-bar");
+  if (bar) bar.style.width = pct + "%";
+
+  const countElem = document.getElementById("sidebar-neuron-count");
+  if (countElem) countElem.textContent = `${used.toLocaleString()} / 10k`;
+
+  const pctElem = document.getElementById("sidebar-neuron-pct");
+  if (pctElem) pctElem.textContent = `${pct}% Used`;
+
+  const topbarStat = document.getElementById("topbar-neuron-stat");
+  if (topbarStat) topbarStat.textContent = `${remaining.toLocaleString()} left`;
+
+  const guideUsed = document.getElementById("guide-neurons-used");
+  if (guideUsed) guideUsed.textContent = `${used.toLocaleString()} Neurons`;
+
+  const guideLeft = document.getElementById("guide-neurons-left");
+  if (guideLeft) guideLeft.textContent = `${remaining.toLocaleString()} Neurons`;
+
+  const guidePct = document.getElementById("guide-neurons-pct");
+  if (guidePct) guidePct.textContent = `${pct}% of daily free quota.`;
+}
+
+function resetNeuronCounter() {
+  localStorage.setItem(STORAGE_KEYS.NEURONS_USED, "0");
+  updateNeuronUI();
+  alert("Neuron usage meter reset to 0!");
+}
+
+function loadStoredCredentials() {
+  const acc = localStorage.getItem(STORAGE_KEYS.ACCOUNT) || "";
+  const tok = localStorage.getItem(STORAGE_KEYS.TOKEN) || "";
+  document.getElementById("cfg-account").value = acc;
+  document.getElementById("cfg-token").value = tok;
+}
+
+function saveSettings() {
+  const acc = document.getElementById("cfg-account").value.trim();
+  const tok = document.getElementById("cfg-token").value.trim();
+  if (acc) localStorage.setItem(STORAGE_KEYS.ACCOUNT, acc);
+  else localStorage.removeItem(STORAGE_KEYS.ACCOUNT);
+
+  if (tok) localStorage.setItem(STORAGE_KEYS.TOKEN, tok);
+  else localStorage.removeItem(STORAGE_KEYS.TOKEN);
+
+  alert("Credentials saved! Empty fields will automatically use .env server variables.");
+}
+
+function clearSettings() {
+  localStorage.removeItem(STORAGE_KEYS.ACCOUNT);
+  localStorage.removeItem(STORAGE_KEYS.TOKEN);
+  document.getElementById("cfg-account").value = "";
+  document.getElementById("cfg-token").value = "";
+  alert("Custom overrides cleared. Now using default server .env variables.");
+}
+
+function getCredentials() {
+  return {
+    accountId: document.getElementById("cfg-account")?.value.trim() || localStorage.getItem(STORAGE_KEYS.ACCOUNT) || "",
+    token: document.getElementById("cfg-token")?.value.trim() || localStorage.getItem(STORAGE_KEYS.TOKEN) || ""
+  };
+}
+
+function showView(viewId, title, iconClass = "bi-app") {
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+
+  event.currentTarget.classList.add('active');
+  const panel = document.getElementById('view-' + viewId);
+  panel.classList.add('active');
+  
+  document.getElementById('view-title').textContent = title.replace(/[^\w\s&]/gi, '').trim();
+  document.getElementById('view-icon').className = `bi ${iconClass}`;
+
+  AOS.refresh();
+
+  if (window.innerWidth <= 860) {
+    toggleSidebar();
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-backdrop').classList.toggle('open');
+}
+
+function setSystemPrompt(text) {
+  document.getElementById('chat-system').value = text;
+}
+
+function addImageStyle(style) {
+  document.getElementById('image-prompt').value += style;
+}
+
+function copyText(elemId) {
+  const text = document.getElementById(elemId)?.innerText || "";
+  if (text) {
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  }
+}
+
+function clearText(elemId) {
+  document.getElementById(elemId).innerText = "Ready for input.";
+}
+
+async function callCloudflareAI(model, payload) {
+  const creds = getCredentials();
+  const res = await fetch("/api/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accountId: creds.accountId,
+      token: creds.token,
+      model,
+      payload
+    })
+  });
+  return await res.json();
+}
+
+// 📸 MEDIA & VISION UPLOAD HANDLERS
+let currentUploadedBase64 = null;
+let currentMediaType = "image";
+
+function onMediaTypeChange() {
+  const select = document.getElementById("media-model");
+  const opt = select.options[select.selectedIndex];
+  currentMediaType = opt.getAttribute("data-type") || "image";
+
+  const fileInput = document.getElementById("file-input");
+  const dropLabel = document.getElementById("upload-label");
+  const dropIcon = document.getElementById("drop-icon");
+  const dropText = document.getElementById("drop-text");
+  const dropHint = document.getElementById("drop-hint");
+  const promptGroup = document.getElementById("vision-prompt-group");
+  const imgPreview = document.getElementById("img-preview");
+  const audioPreview = document.getElementById("audio-preview");
+
+  currentUploadedBase64 = null;
+  imgPreview.style.display = "none";
+  audioPreview.style.display = "none";
+
+  if (currentMediaType === "image") {
+    fileInput.accept = "image/*";
+    dropLabel.textContent = "Upload Image File (PNG, JPG, WebP)";
+    dropIcon.className = "bi bi-image-fill";
+    dropText.textContent = "Click or Drag & Drop Image Here";
+    dropHint.textContent = "Supports PNG, JPG, WebP up to 10MB";
+    promptGroup.style.display = "block";
+  } else {
+    fileInput.accept = "audio/*";
+    dropLabel.textContent = "Upload Audio File (MP3, WAV, M4A, OGG)";
+    dropIcon.className = "bi bi-mic-fill";
+    dropText.textContent = "Click or Drag & Drop Audio File Here";
+    dropHint.textContent = "Speech will be automatically transcribed with Whisper";
+    promptGroup.style.display = "none";
+  }
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    currentUploadedBase64 = e.target.result;
+    if (currentMediaType === "image") {
+      const img = document.getElementById("img-preview");
+      img.src = currentUploadedBase64;
+      img.style.display = "block";
+      document.getElementById("drop-text").textContent = `Selected: ${file.name}`;
+    } else {
+      const audio = document.getElementById("audio-preview");
+      audio.src = currentUploadedBase64;
+      audio.style.display = "block";
+      document.getElementById("drop-text").textContent = `Selected: ${file.name}`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runMediaInference() {
+  const model = document.getElementById("media-model").value;
+  const prompt = document.getElementById("media-prompt").value.trim();
+  const output = document.getElementById("media-output");
+  const btn = document.getElementById("media-btn");
+
+  if (!currentUploadedBase64) {
+    return alert("Please select or upload a file first.");
+  }
+
+  output.innerHTML = getThinkingHTML(currentMediaType === "image" ? "Analyzing Image with Vision Model..." : "Transcribing Speech with Whisper...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Processing...`;
+
+  try {
+    let payload = {};
+    if (currentMediaType === "image") {
+      payload = {
+        image_base64: currentUploadedBase64,
+        prompt: prompt || "Describe this image in detail."
+      };
+    } else {
+      payload = {
+        audio_base64: currentUploadedBase64
+      };
+    }
+
+    const data = await callCloudflareAI(model, payload);
+    const responseText = data.result?.description || data.result?.text || data.result?.response || (typeof data.result === 'string' ? data.result : JSON.stringify(data.result, null, 2));
+    output.innerText = responseText;
+    addNeurons(20);
+  } catch (err) {
+    output.innerText = "Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-play-circle-fill"></i> Analyze Media`;
+  }
+}
+
+// 1. Chat with Clean Thinking Wave
+async function sendChat() {
+  const model = document.getElementById("chat-model").value;
+  const system = document.getElementById("chat-system").value.trim();
+  const input = document.getElementById("chat-input").value.trim();
+  const output = document.getElementById("chat-output");
+  const btn = document.getElementById("chat-btn");
+  const statBar = document.getElementById("chat-stat-bar");
+
+  if (!input) return alert("Please enter a question.");
+
+  output.innerHTML = getThinkingHTML("Thinking on Cloudflare Edge...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Thinking...`;
+  statBar.style.display = "none";
+
+  try {
+    const payload = {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: input }
+      ]
+    };
+    const data = await callCloudflareAI(model, payload);
+
+    if (!data.success && data.errors) {
+      output.innerText = JSON.stringify(data, null, 2);
+      return;
+    }
+
+    const responseText = data.result?.response || (typeof data.result === 'string' ? data.result : JSON.stringify(data.result, null, 2));
+    output.innerText = responseText;
+
+    const estimatedTokens = Math.ceil((input.length + responseText.length) / 4);
+    let neuronRate = 11;
+    if (model.includes("1b") || model.includes("3b")) neuronRate = 4;
+    if (model.includes("70b") || model.includes("32b") || model.includes("120b")) neuronRate = 25;
+    
+    const cost = Math.max(1, Math.round((estimatedTokens / 1000) * neuronRate));
+    addNeurons(cost);
+
+    const remaining = Math.max(0, DAILY_LIMIT - getNeuronsUsedToday());
+    document.getElementById("chat-neuron-stat").innerHTML = `<i class="bi bi-lightning-fill"></i> ~${cost} Neurons consumed (~${estimatedTokens} tokens)`;
+    document.getElementById("chat-balance-stat").textContent = `${remaining.toLocaleString()} remaining today`;
+    statBar.style.display = "flex";
+
+  } catch (err) {
+    output.innerText = "Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-send-fill"></i> Generate Response`;
+  }
+}
+
+// ==========================================
+// 🎨 IMAGE STUDIO & LIVE AI EDITOR
+// ==========================================
+let currentStudioImageBase64 = null;
+let currentRotation = 0;
+let isFlipped = false;
+let customPresetFilter = "none";
+
+function switchImgStudioMode(mode) {
+  const genTab = document.getElementById("img-tab-gen");
+  const editTab = document.getElementById("img-tab-edit");
+  const genControls = document.getElementById("img-gen-controls");
+  const editControls = document.getElementById("img-edit-controls");
+
+  if (mode === "generate") {
+    genTab.style.background = "var(--cf-orange-subtle)";
+    genTab.style.color = "var(--cf-orange-dark)";
+    genTab.style.borderColor = "var(--cf-orange-border)";
+    genTab.style.fontWeight = "700";
+
+    editTab.style.background = "var(--bg-card-subtle)";
+    editTab.style.color = "var(--text-muted)";
+    editTab.style.borderColor = "var(--border-color)";
+    editTab.style.fontWeight = "600";
+
+    genControls.style.display = "block";
+    editControls.style.display = "none";
+  } else {
+    editTab.style.background = "var(--cf-orange-subtle)";
+    editTab.style.color = "var(--cf-orange-dark)";
+    editTab.style.borderColor = "var(--cf-orange-border)";
+    editTab.style.fontWeight = "700";
+
+    genTab.style.background = "var(--bg-card-subtle)";
+    genTab.style.color = "var(--text-muted)";
+    genTab.style.borderColor = "var(--border-color)";
+    genTab.style.fontWeight = "600";
+
+    genControls.style.display = "none";
+    editControls.style.display = "block";
+  }
+}
+
+function handleEditImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    displayStudioImage(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function sendToEditor() {
+  switchImgStudioMode("edit");
+}
+
+function displayStudioImage(src) {
+  currentStudioImageBase64 = src;
+  const imgElem = document.getElementById("active-studio-img");
+  const placeholder = document.getElementById("img-placeholder");
+  const actionBar = document.getElementById("img-action-bar");
+  const downloadLink = document.getElementById("img-download-link");
+
+  imgElem.src = src;
+  imgElem.style.display = "block";
+  placeholder.style.display = "none";
+  actionBar.style.display = "flex";
+  downloadLink.href = src;
+
+  // Reset transforms
+  currentRotation = 0;
+  isFlipped = false;
+  applyLiveFilters();
+}
+
+function applyLiveFilters() {
+  const imgElem = document.getElementById("active-studio-img");
+  if (!imgElem || !currentStudioImageBase64) return;
+
+  const b = document.getElementById("filter-brightness").value;
+  const c = document.getElementById("filter-contrast").value;
+  const s = document.getElementById("filter-saturate").value;
+
+  document.getElementById("val-brightness").textContent = b + "%";
+  document.getElementById("val-contrast").textContent = c + "%";
+  document.getElementById("val-saturate").textContent = s + "%";
+
+  let filterStr = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+  if (customPresetFilter !== "none") {
+    filterStr += ` ${customPresetFilter}`;
+  }
+
+  let transformStr = `rotate(${currentRotation}deg)`;
+  if (isFlipped) transformStr += ` scaleX(-1)`;
+
+  imgElem.style.filter = filterStr;
+  imgElem.style.transform = transformStr;
+}
+
+function setPresetFilter(filter) {
+  customPresetFilter = filter;
+  if (filter === "none") {
+    document.getElementById("filter-brightness").value = 100;
+    document.getElementById("filter-contrast").value = 100;
+    document.getElementById("filter-saturate").value = 100;
+  }
+  applyLiveFilters();
+}
+
+function rotateImage(deg) {
+  currentRotation = (currentRotation + deg) % 360;
+  applyLiveFilters();
+}
+
+function flipImage() {
+  isFlipped = !isFlipped;
+  applyLiveFilters();
+}
+
+// 🪄 AI Prompt-Based Image Transformation & Restyle
+async function runAiImageEdit() {
+  if (!currentStudioImageBase64) {
+    return alert("Please upload or select an image to edit first.");
+  }
+
+  const prompt = document.getElementById("ai-edit-prompt").value.trim();
+  if (!prompt) return alert("Please enter a transformation prompt.");
+
+  const btn = document.getElementById("ai-edit-btn");
+  const placeholder = document.getElementById("img-placeholder");
+  const imgElem = document.getElementById("active-studio-img");
+  const actionBar = document.getElementById("img-action-bar");
+
+  imgElem.style.display = "none";
+  actionBar.style.display = "none";
+  placeholder.style.display = "block";
+  placeholder.innerHTML = getThinkingHTML("Analyzing source image & synthesizing AI restyle with Flux...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Restyling Image...`;
+
+  try {
+    // Step 1: Understand visual composition with Fast Vision Model
+    let imageDescription = "";
+    try {
+      const visionRes = await callCloudflareAI("@cf/moondream/moondream3.1-9B-A2B", {
+        image_base64: currentStudioImageBase64,
+        prompt: "Describe this subject, composition, colors, and framing in 1 short sentence."
+      });
+      imageDescription = visionRes.result?.description || visionRes.result?.text || "";
+    } catch (vErr) {
+      console.warn("Vision preview fallback:", vErr);
+    }
+
+    // Step 2: Combine source image context + user's target style
+    const combinedPrompt = imageDescription
+      ? `${prompt}, maintaining composition of (${imageDescription}), highly detailed, masterpiece, 8k render`
+      : `${prompt}, highly detailed, masterpiece, 8k render`;
+
+    // Step 3: Generate high-fidelity transformed image using Flux 1 Schnell
+    const genRes = await callCloudflareAI("@cf/black-forest-labs/flux-1-schnell", {
+      prompt: combinedPrompt
+    });
+
+    let imgSrc = null;
+    if (genRes.result?.media_type?.startsWith("image/") && genRes.result?.base64) {
+      imgSrc = genRes.result.base64;
+    } else if (genRes.result?.image) {
+      imgSrc = `data:image/png;base64,${genRes.result.image}`;
+    }
+
+    if (imgSrc) {
+      displayStudioImage(imgSrc);
+      addNeurons(50);
+    } else {
+      placeholder.innerHTML = `<pre style="color:#f87171;">${JSON.stringify(genRes, null, 2)}</pre>`;
+    }
+  } catch (err) {
+    placeholder.innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-stars"></i> Transform & Update Image`;
+  }
+}
+
+// 2. Generate Image
+async function generateImage() {
+  const model = document.getElementById("image-model").value;
+  const prompt = document.getElementById("image-prompt").value.trim();
+  const btn = document.getElementById("image-btn");
+
+  if (!prompt) return alert("Please enter an image prompt.");
+
+  const placeholder = document.getElementById("img-placeholder");
+  const imgElem = document.getElementById("active-studio-img");
+  const actionBar = document.getElementById("img-action-bar");
+
+  imgElem.style.display = "none";
+  actionBar.style.display = "none";
+  placeholder.style.display = "block";
+  placeholder.innerHTML = getThinkingHTML("Generating image with Flux/SDXL...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Rendering...`;
+
+  try {
+    const data = await callCloudflareAI(model, { prompt });
+
+    let imgSrc = null;
+    if (data.result?.media_type?.startsWith("image/") && data.result?.base64) {
+      imgSrc = data.result.base64;
+    } else if (data.result?.image) {
+      imgSrc = `data:image/png;base64,${data.result.image}`;
+    }
+
+    if (imgSrc) {
+      displayStudioImage(imgSrc);
+      addNeurons(50);
+    } else {
+      placeholder.innerHTML = `<pre style="color:#f87171;">${JSON.stringify(data, null, 2)}</pre>`;
+    }
+  } catch (err) {
+    placeholder.innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-stars"></i> Generate Image (~50 Neurons)`;
+  }
+}
+
+// 3. Code
+async function generateCode() {
+  const model = document.getElementById("code-model").value;
+  const prompt = document.getElementById("code-prompt").value.trim();
+  const output = document.getElementById("code-output");
+  const btn = document.getElementById("code-btn");
+
+  if (!prompt) return alert("Please enter code or task.");
+
+  output.innerHTML = getThinkingHTML("Writing code solution...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Coding...`;
+
+  try {
+    const payload = {
+      messages: [
+        { role: "system", content: "You are an expert coder. Write clean, robust code with clear comments." },
+        { role: "user", content: prompt }
+      ]
+    };
+    const data = await callCloudflareAI(model, payload);
+    const responseText = data.result?.response || (typeof data.result === 'string' ? data.result : JSON.stringify(data.result, null, 2));
+    output.innerText = responseText;
+    addNeurons(15);
+  } catch (err) {
+    output.innerText = "Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-terminal-fill"></i> Generate Code Solution`;
+  }
+}
+
+// 4. TTS
+async function synthesizeSpeech() {
+  const model = document.getElementById("audio-model").value;
+  const text = document.getElementById("audio-text").value.trim();
+  const box = document.getElementById("audio-player-box");
+  const btn = document.getElementById("audio-btn");
+
+  if (!text) return alert("Please enter text.");
+
+  box.innerHTML = getThinkingHTML("Synthesizing voice audio...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Synthesizing...`;
+
+  try {
+    const data = await callCloudflareAI(model, { text });
+    if (data.result?.audio_base64) {
+      box.innerHTML = `
+        <audio controls autoplay style="width:100%; margin-top:10px;">
+          <source src="${data.result.audio_base64}" type="${data.result.media_type || 'audio/wav'}">
+        </audio>
+      `;
+      addNeurons(5);
+    } else {
+      box.innerHTML = `<pre style="color:#f87171;">${JSON.stringify(data, null, 2)}</pre>`;
+    }
+  } catch (err) {
+    box.innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-mic-fill"></i> Generate Voice Audio`;
+  }
+}
+
+// 5. Translate
+async function runTranslate() {
+  const model = "@cf/meta/m2m100-1.2b";
+  const target_lang = document.getElementById("trans-target").value;
+  const text = document.getElementById("trans-text").value.trim();
+  const output = document.getElementById("trans-output");
+  const btn = document.getElementById("trans-btn");
+
+  if (!text) return alert("Please enter text.");
+
+  output.innerHTML = getThinkingHTML("Translating text...");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Translating...`;
+
+  try {
+    const data = await callCloudflareAI(model, { text, target_lang });
+    output.innerText = data.result?.translated_text || JSON.stringify(data.result, null, 2);
+    addNeurons(2);
+  } catch (err) {
+    output.innerText = "Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Translate Text`;
+  }
+}
+</script>
+
+</body>
+</html>

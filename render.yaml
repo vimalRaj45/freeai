@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cloudflare-personal-ai
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: "npm start"
+    envVars:
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
